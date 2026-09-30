@@ -1,0 +1,41 @@
+{
+  "name": "databricks-mcp",
+  "version": "0.1.0",
+  "description": "A simple MCP wrapper around the 'databricks' CLI.",
+  "type": "module",
+  "author": {
+    "name": "Jarrett Meyer",
+    "email": "jarrettmeyer@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jarrettmeyer/databricks-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "databricks",
+    "cli"
+  ],
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "scripts": {
+    "format": "bun run prettier --write .",
+    "format:check": "bun run prettier --check .",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "bun run tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "shell-quote": "^1.8.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/shell-quote": "^1.7.5",
+    "bun-types": "^1.3.11",
+    "prettier": "^3.8.1",
+    "typescript": "^6.0.2"
+  }
+}
