@@ -128,6 +128,30 @@ Check authentication status:
 
 This tool works with any MCP-compatible client, including Claude Desktop, Claude Code, and Cursor.
 
+#### Pipes and redirects
+
+If the `command` contains a pipe (`|`) or redirect (`>`, `<`), the server strips the operator and everything after it, then executes only the `databricks` portion. The raw output is returned so the client can filter or format it.
+
+```text
+Pipe is stripped — only "clusters list" runs:
+  command: "clusters list | grep running"
+
+Redirect is stripped — only "clusters list" runs:
+  command: "clusters list > output.txt"
+
+First pipe wins — only "clusters list" runs:
+  command: "clusters list | grep running | head -5"
+```
+
+Operators inside quoted arguments are preserved, so SQL containing `>` or `|` is unaffected:
+
+```text
+The > inside the quoted query is kept:
+  command: 'sql query --query "SELECT * FROM t WHERE a > 1"'
+```
+
+Other shell syntax — `;`, `&&`, comments (`#`), glob patterns (`*.json`), and variable references (`$VAR`) — is not supported and will produce an error.
+
 ## Additional Configuration
 
 ### `DATABRICKS_PATH`

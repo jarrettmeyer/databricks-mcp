@@ -1,4 +1,4 @@
-import { tokenize } from "./tokenize.js";
+import { tokenize, stripPipelineSuffix } from "./tokenize.js";
 
 /** The default databricks binary name, resolved from the system PATH. */
 const DEFAULT_DATABRICKS_BIN = "databricks";
@@ -18,7 +18,7 @@ export interface DatabricksCommandResult {
  * is returned alongside them so callers can distinguish success from failure without throwing.
  */
 export async function executeDatabricksCommand(command: string): Promise<DatabricksCommandResult> {
-  const args = tokenize(command);
+  const args = tokenize(stripPipelineSuffix(command));
   const databricksBinary = process.env.DATABRICKS_PATH || DEFAULT_DATABRICKS_BIN;
 
   const proc = Bun.spawn([databricksBinary, ...args], {
