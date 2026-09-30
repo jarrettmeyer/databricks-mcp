@@ -1,0 +1,6 @@
+.scratch/
+.worktrees/
+dist/
+node_modules/
+bun.lockb
+.env
