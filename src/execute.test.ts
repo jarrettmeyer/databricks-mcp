@@ -40,4 +40,32 @@ describe("executeDatabricksCommand", () => {
     await executeDatabricksCommand("clusters list");
     expect(spawnCalls[0][0]).toBe("/custom/path/to/databricks");
   });
+
+  test("strips pipe suffix so only the databricks portion is spawned", async () => {
+    const { executeDatabricksCommand } = await import("./execute");
+    await executeDatabricksCommand("clusters list | grep running");
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual(["databricks", "clusters", "list"]);
+  });
+
+  test("strips redirect suffix so only the databricks portion is spawned", async () => {
+    const { executeDatabricksCommand } = await import("./execute");
+    await executeDatabricksCommand("clusters list > output.txt");
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual(["databricks", "clusters", "list"]);
+  });
+
+  test("strips everything after the first pipe in a multi-stage pipeline", async () => {
+    const { executeDatabricksCommand } = await import("./execute");
+    await executeDatabricksCommand("clusters list | grep running | head -5");
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual(["databricks", "clusters", "list"]);
+  });
+
+  test("preserves quoted redirect inside a SQL string", async () => {
+    const { executeDatabricksCommand } = await import("./execute");
+    await executeDatabricksCommand('sql query --query "SELECT * FROM t WHERE a > 1"');
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual(["databricks", "sql", "query", "--query", "SELECT * FROM t WHERE a > 1"]);
+  });
 });

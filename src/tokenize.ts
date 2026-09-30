@@ -62,3 +62,28 @@ function assertBalancedQuotes(input: string): void {
     throw new Error(`Tokenization failed: unmatched ${which} quote. Ensure all quoted arguments are properly closed.`);
   }
 }
+
+/**
+ * Returns the portion of `command` before the first unquoted pipe (|) or redirect (>, <) operator.
+ * Operators inside single or double quotes are preserved. If no such operator is found, the
+ * original string is returned unchanged.
+ */
+export function stripPipelineSuffix(command: string): string {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i];
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (!inSingle && !inDouble && (ch === "|" || ch === ">" || ch === "<")) {
+      return command.slice(0, i);
+    }
+  }
+  return command;
+}

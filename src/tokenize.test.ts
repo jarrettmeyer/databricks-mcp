@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { tokenize } from "./tokenize.js";
+import { tokenize, stripPipelineSuffix } from "./tokenize.js";
 
 describe("tokenize - basic quoting", () => {
   test("no quotes: baseline behavior", () => {
@@ -137,5 +137,105 @@ describe("tokenize - acceptance criteria", () => {
     const tokens = tokenize('jobs create --json \'{"name": "etl job"}\'');
     expect(tokens).toEqual(["jobs", "create", "--json", '{"name": "etl job"}']);
     expect(tokens).toHaveLength(4);
+  });
+});
+
+describe("stripPipelineSuffix - no operator", () => {
+  test("returns input unchanged when no pipe or redirect is present", () => {
+    expect(stripPipelineSuffix("clusters list")).toBe("clusters list");
+  });
+
+  test("returns input unchanged for a complex command with no operators", () => {
+    expect(stripPipelineSuffix('jobs create --json \'{"name": "etl job"}\'')).toBe(
+      'jobs create --json \'{"name": "etl job"}\'',
+    );
+  });
+
+  test("returns empty string unchanged", () => {
+    expect(stripPipelineSuffix("")).toBe("");
+  });
+});
+
+describe("stripPipelineSuffix - unquoted pipe", () => {
+  test("strips at unquoted pipe operator", () => {
+    expect(stripPipelineSuffix("clusters list | grep running")).toBe("clusters list ");
+  });
+
+  test("strips at first pipe when multiple pipes present", () => {
+    expect(stripPipelineSuffix("clusters list | grep running | head -5")).toBe("clusters list ");
+  });
+
+  test("strips at double pipe (logical OR) - first pipe wins", () => {
+    expect(stripPipelineSuffix("clusters list || echo fail")).toBe("clusters list ");
+  });
+});
+
+describe("stripPipelineSuffix - unquoted redirect", () => {
+  test("strips at unquoted > operator", () => {
+    expect(stripPipelineSuffix("clusters list > output.txt")).toBe("clusters list ");
+  });
+
+  test("strips at unquoted >> operator - first > wins", () => {
+    expect(stripPipelineSuffix("clusters list >> output.txt")).toBe("clusters list ");
+  });
+
+  test("strips at unquoted < operator", () => {
+    expect(stripPipelineSuffix("clusters list < input.txt")).toBe("clusters list ");
+  });
+
+  test("strips at unquoted << operator - first < wins", () => {
+    expect(stripPipelineSuffix("clusters list << input.txt")).toBe("clusters list ");
+  });
+});
+
+describe("stripPipelineSuffix - first operator wins", () => {
+  test("pipe before redirect: stops at pipe", () => {
+    expect(stripPipelineSuffix("clusters list | grep running > output.txt")).toBe("clusters list ");
+  });
+
+  test("redirect before pipe: stops at redirect", () => {
+    expect(stripPipelineSuffix("clusters list > output.txt | grep running")).toBe("clusters list ");
+  });
+});
+
+describe("stripPipelineSuffix - quoted operators preserved", () => {
+  test("pipe inside double quotes is not a delimiter", () => {
+    expect(stripPipelineSuffix('echo "a|b"')).toBe('echo "a|b"');
+  });
+
+  test("pipe inside single quotes is not a delimiter", () => {
+    expect(stripPipelineSuffix("echo 'a|b'")).toBe("echo 'a|b'");
+  });
+
+  test("redirect inside double quotes is not a delimiter", () => {
+    expect(stripPipelineSuffix('echo "a > b"')).toBe('echo "a > b"');
+  });
+
+  test("redirect inside single quotes is not a delimiter", () => {
+    expect(stripPipelineSuffix("echo 'a > b'")).toBe("echo 'a > b'");
+  });
+
+  test("greater-than in quoted SQL is preserved", () => {
+    expect(stripPipelineSuffix('sql query --query "SELECT * FROM t WHERE a > 1"')).toBe(
+      'sql query --query "SELECT * FROM t WHERE a > 1"',
+    );
+  });
+
+  test("pipe after a quoted segment containing redirect is stripped at the pipe", () => {
+    expect(stripPipelineSuffix('sql query --query "SELECT a > b" | grep x')).toBe('sql query --query "SELECT a > b" ');
+  });
+});
+
+describe("stripPipelineSuffix - edge cases", () => {
+  test("pipe at start returns empty string", () => {
+    expect(stripPipelineSuffix("| grep running")).toBe("");
+  });
+
+  test("redirect at start returns empty string", () => {
+    expect(stripPipelineSuffix("> output.txt")).toBe("");
+  });
+
+  test("pipe immediately after databricks command with no space", () => {
+    expect(stripPipelineSuffix("clusters list|grep running")).toBe("clusters list");
   });
 });
